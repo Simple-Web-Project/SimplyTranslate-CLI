@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import asyncio
 import argparse
 import requests
 import sys
@@ -141,8 +142,12 @@ else:
 
         engine = GoogleTranslateEngine()
 
-    from_language = to_lang_code(from_language, engine)
-    to_language = to_lang_code(to_language, engine)
+    async def get_languages():
+        return await asyncio.gather(
+            asyncio.create_task(to_lang_code(from_language, engine)),
+            asyncio.create_task(to_lang_code(to_language, engine))
+        )
+    from_language, to_language = asyncio.run(get_languages())
 
     result = engine.translate(
         text, from_language=from_language, to_language=to_language
@@ -158,7 +163,7 @@ if result is None:
     )
     sys.exit(1)
 else:
-    print(result)
+    print(asyncio.run(result)['translated-text'])
 
     if online and print_link:
         print(link)
